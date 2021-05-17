@@ -8,34 +8,38 @@ pipeline = dai.Pipeline()
 # Define a source - color camera
 cam = pipeline.createColorCamera()
 cam.setBoardSocket(dai.CameraBoardSocket.RGB)
-cam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_4_K)
+cam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
 
 # Create an encoder, consuming the frames and encoding them using H.265 encoding
 videoEncoder = pipeline.createVideoEncoder()
-videoEncoder.setDefaultProfilePreset(3840, 2160, 30, dai.VideoEncoderProperties.Profile.H265_MAIN)
+videoEncoder.setDefaultProfilePreset(1920, 1080, 30, dai.VideoEncoderProperties.Profile.H265_MAIN)
 cam.video.link(videoEncoder.input)
 
 # Create output
 videoOut = pipeline.createXLinkOut()
-videoOut.setStreamName('h265')
+videoOut.setStreamName('h264')
 videoEncoder.bitstream.link(videoOut.input)
 
 # Connect and start the pipeline
 with dai.Device(pipeline) as device:
-
+    cnt = 0
     # Output queue will be used to get the encoded data from the output defined above
-    q = device.getOutputQueue(name="h265", maxSize=30, blocking=True)
+    q = device.getOutputQueue(name="h264", maxSize=30, blocking=True)
 
-    # The .h265 file is a raw stream file (not playable yet)
-    with open('video.h265', 'wb') as videoFile:
+    # The .h264 file is a raw stream file (not playable yet)
+    with open('video.h264', 'wb') as videoFile:
         print("Press Ctrl+C to stop encoding...")
         try:
             while True:
                 h264Packet = q.get()  # Blocking call, will wait until a new data has arrived
-                h264Packet.getData().tofile(videoFile)  # Appends the packet data to the opened file
+                h264Data = h264Packet.getData()
+                h264Data.tofile(videoFile)  # Appends the packet data to the opened file
+                print(f"received {cnt} size {len(h264Data)}")
+                cnt+=1
         except KeyboardInterrupt:
             # Keyboard interrupt (Ctrl + C) detected
             pass
 
-    print("To view the encoded data, convert the stream file (.h265) into a video file (.mp4) using a command below:")
-    print("ffmpeg -framerate 30 -i video.h265 -c copy video.mp4")
+
+    print("To view the encoded data, convert the stream file (.h264) into a video file (.mp4) using a command below:")
+    print("ffmpeg -framerate 30 -i video.h264 -c copy video.mp4")
