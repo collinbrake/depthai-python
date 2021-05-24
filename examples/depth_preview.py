@@ -44,20 +44,23 @@ depth.disparity.link(xout.input)
 # Connect to device and start pipeline
 with dai.Device(pipeline) as device:
 
+    device.startPipeline()
+    
     # Output queue will be used to get the disparity frames from the outputs defined above
     q = device.getOutputQueue(name="disparity", maxSize=4, blocking=False)
 
     while True:
-        inDepth = q.get()  # blocking call, will wait until a new data has arrived
-        frame = inDepth.getFrame()
-        # Normalization for better visualization
-        frame = (frame * (255 / depth.getMaxDisparity())).astype(np.uint8)
+        inDepth = q.tryGet()  # blocking call, will wait until a new data has arrived
+        if inDepth is not None:
+            frame = inDepth.getFrame()
+            # Normalization for better visualization
+            frame = (frame * (255 / 95)).astype(np.uint8)
 
-        cv2.imshow("disparity", frame)
+            cv2.imshow("disparity", frame)
 
-        # Available color maps: https://docs.opencv.org/3.4/d3/d50/group__imgproc__colormap.html
-        frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
-        cv2.imshow("disparity_color", frame)
+            # Available color maps: https://docs.opencv.org/3.4/d3/d50/group__imgproc__colormap.html
+            frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
+            cv2.imshow("disparity_color", frame)
 
         if cv2.waitKey(1) == ord('q'):
             break
